@@ -1,5 +1,5 @@
 <?php
-namespace textile;
+namespace li3_textile;
 /**
  * Example: get XHTML from a given Textile-markup string ($string)
  *
