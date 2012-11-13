@@ -729,7 +729,10 @@ class Textile
     }
 
 // -------------------------------------------------------------
-    function fLink($m)
+ 
+
+
+		function fLink($m)
     {
         list(, $pre, $atts, $text, $title, $url, $slash, $post) = $m;
 
@@ -745,8 +748,15 @@ class Textile
         $text = $this->glyphs($text);
 
         $url = $this->relURL($url);
-
-        $out = '<a href="' . $this->encode_html($url . $slash) . '"' . $atts . $this->rel . '>' . $text . '</a>' . $post;
+				//var_dump($url); 
+				
+				if (strpos( $url, "http://www.youtube.com/")===0) {
+					$embed = Textile::prepareEmbedVideo($url);
+					$out = '<iframe src="'.$embed.'" width="620" height="350" frameborder="0" webkitAllowFullScreen mozallowfullscreen allowFullScreen></iframe>';
+				}else{
+				$out = '<a href="' . $this->encode_html($url . $slash) . '"' . $atts . $this->rel . '>' . $text . '</a>' . $post;	
+				}
+        
 
         // $this->dump($out);
         return $this->shelve($out);
@@ -1130,7 +1140,42 @@ class Textile
         return $this->block($text."\n\n");
     }
 
+		static function prepareEmbedVideo($embed_code) {
+			if($embed_code != '') {
+					$regex = '/.+?src="(.+?)".+?/';
+					$embed = preg_match($regex, $embed_code, $match);
 
+					$vimeo_regex = '#(http://|https://)?(vimeo.com)/([0-9]+)#i';
+					$embed_vimeo = preg_match($vimeo_regex, $embed_code, $vimeo_match);
+					if ($embed && !empty($match)) {
+						return $match[1];
+					} elseif ($embed_vimeo && !empty($vimeo_match)) {
+						$video_code = $vimeo_match[3]; 
+						return 'http://player.vimeo.com/video/'.$video_code;
+					} else {
+						$regex = "#(?<=v=)[a-zA-Z0-9-]+(?=&)|(?<=v\/)[^&\n]+(?=\?)|(?<=v=)[^&\n]+|(?<=youtu.be/)[^&\n]+#";
+						$v_id = preg_match($regex, $embed_code, $match);
+						if ($v_id && !empty($match)) {
+							$embed_code = 'http://www.youtube.com/embed/'.$match[0];
+						} else {
+							$new_regex = "#(http://|https://)?(?:[A-Za-z0-9.]{2,5}.)?(youtube.com)/v/([0-9A-Za-z-_]{11})+#";
+							$nv_id = preg_match($new_regex, $embed_code, $new_match);
+							if ($nv_id && !empty($new_match)) {
+								$embed_code = 'http://www.youtube.com/embed/'.$new_match[3];
+							} else {
+								$parts = explode('/', $embed_code);
+								if($parts[2] == 'video.google.com') {
+									//$embed_code = '<embed style="width:400px; height:326px;" id="VideoPlayback" type="application/x-shockwave-flash" src="'.$embed_code.'"></embed>';
+								}
+								return $embed_code;
+							}
+						}
+						if(strpos($embed_code, 'http://') == 0) {
+							return $embed_code;
+						}
+					}
+			}
+		}
 } // end class
 
 ?>
